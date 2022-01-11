@@ -23,7 +23,6 @@ import (
 // SignToken Generates a signature using P-256 ECDSA over passed arbitrary data
 // and return the signature as JWT ES-256
 func SignToken(sha256hash [32]byte, privkey *ecdsa.PrivateKey, retentionDays int, protectedHeaders interface{}) (string, error) {
-	//logger.Logger.Debug("signing digest with server private key")
 	tt := time.Now()
 	payload := jwt.MapClaims{
 		"content-hash": base64.StdEncoding.EncodeToString(sha256hash[:]),
