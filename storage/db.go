@@ -71,31 +71,37 @@ func (s *ORMDatabase) CreateIfNot(ctx context.Context, obj DbItem) error {
 	return nil
 }
 
-func (s *ORMDatabase) ReadByKey(ctx context.Context, obj DbItem, key interface{}) error {
-	tx := s.Db.WithContext(ctx).First(obj, "id", key)
-	return CheckResult(tx, false)
+func (s *ORMDatabase) ReadByKey(cacheKey string, ctx context.Context, obj DbItem, out interface{}) (interface{}, error) {
+	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
+		tx := s.Db.WithContext(ctx).First(obj, "id", out)
+		return CheckResult(tx, false)
+	})
 }
 
 // ReadOne returns object row in database as unique item
-func (s *ORMDatabase) ReadOne(ctx context.Context, obj DbItem) error {
-	tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
-	return CheckResult(tx, false)
+func (s *ORMDatabase) ReadOne(cacheKey string, ctx context.Context, obj DbItem) (interface{}, error) {
+	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
+		tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
+		return CheckResult(tx, false)
+	})
 }
 
 // ReadAll makes a SELECT * style operation with given model and reads all fields
-func (s *ORMDatabase) ReadAll(ctx context.Context, tx *gorm.DB, obj interface{}) error {
-	if tx != nil {
-		// reuse passed tx Db context
-		tx = tx.Find(obj) // find product with integer primary key
+func (s *ORMDatabase) ReadAll(cacheKey string, ctx context.Context, tx *gorm.DB, obj interface{}) (interface{}, error) {
+	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
+		if tx != nil {
+			// reuse passed tx Db context
+			tx = tx.Find(obj) // find product with integer primary key
+			return CheckResult(tx, false)
+		}
+		tx = s.Db.WithContext(ctx).Find(obj) // find product with integer primary key
 		return CheckResult(tx, false)
-	}
-	tx = s.Db.WithContext(ctx).Find(obj) // find product with integer primary key
-	return CheckResult(tx, false)
+	})
 }
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
 func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gorm.DB, obj interface{}, columns ...string) (interface{}, error) {
-	return s.withCache(key, obj, 10 * time.Minute, func(dst interface{}) error {
+	return s.withCache(key, obj, 10*time.Minute, func(dst interface{}) error {
 		if tx != nil {
 			// reuse passed tx Db context
 			tx = tx.Select(columns).Find(dst)
