@@ -14,7 +14,7 @@ type CachePeer struct {
 	cacheGroup  *groupcache.Group
 }
 
-func (peer *CachePeer) Stop()  error {
+func (peer *CachePeer) Stop() error {
 	return peer.cacheServer.Shutdown(context.Background())
 }
 
@@ -41,7 +41,7 @@ func (peer *CachePeer) Get(itemId string, dest interface{}) error {
 		return err
 	}
 	// handle readed data
-	if !(data == nil || len(data)==0) {
+	if !(data == nil || len(data) == 0) {
 		return json.Unmarshal(data, dest)
 	}
 	return nil
@@ -88,7 +88,7 @@ func (peer *CachePeer) Start() {
 	}()
 
 	// Create a new group cache with a max cache size of 64Mb
-	maxSize := int64(64<<20)
+	maxSize := int64(64 << 20)
 	group := groupcache.NewGroup("cache", maxSize, groupcache.GetterFunc(
 		func(ctx context.Context, id string, dest groupcache.Sink) error {
 			log.Printf("cache item with KEY=%s not found in local peer", id)
