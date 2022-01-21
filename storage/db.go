@@ -104,7 +104,7 @@ func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gor
 		}
 		return CheckResult(tx, false)
 	})
-	obj = data
+	obj = &data
 	return err
 }
 
