@@ -14,6 +14,7 @@ package cache
 
 import (
 	"bytes"
+	"github.com/zerjioang/zgo/timer"
 	"io/ioutil"
 	"runtime"
 	"strconv"
@@ -1777,7 +1778,7 @@ func TestGetWithExpiration(t *testing.T) {
 	if expiration.UnixNano() != tc.items["e"].Expiration {
 		t.Error("expiration for e is not the correct time")
 	}
-	if expiration.UnixNano() < time.Now().UnixNano() {
+	if expiration.UnixNano() < timer.Time().UnixNano() {
 		t.Error("expiration for e is in the past")
 	}
 }

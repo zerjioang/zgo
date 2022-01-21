@@ -15,6 +15,7 @@ package cache
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/zerjioang/zgo/timer"
 	"io"
 	"os"
 	"runtime"
@@ -32,7 +33,7 @@ func (item Item) Expired() bool {
 	if item.Expiration == 0 {
 		return false
 	}
-	return time.Now().UnixNano() > item.Expiration
+	return timer.Time().UnixNano() > item.Expiration
 }
 
 const (
@@ -67,7 +68,7 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 		d = c.defaultExpiration
 	}
 	if d > 0 {
-		e = time.Now().Add(d).UnixNano()
+		e = timer.Time().Add(d).UnixNano()
 	}
 	c.mu.Lock()
 	c.items[k] = Item{
@@ -85,7 +86,7 @@ func (c *cache) set(k string, x interface{}, d time.Duration) {
 		d = c.defaultExpiration
 	}
 	if d > 0 {
-		e = time.Now().Add(d).UnixNano()
+		e = timer.Time().Add(d).UnixNano()
 	}
 	c.items[k] = Item{
 		Object:     x,
@@ -138,7 +139,7 @@ func (c *cache) Get(k string) (interface{}, bool) {
 		return nil, false
 	}
 	if item.Expiration > 0 {
-		if time.Now().UnixNano() > item.Expiration {
+		if timer.Time().UnixNano() > item.Expiration {
 			c.mu.RUnlock()
 			return nil, false
 		}
@@ -161,7 +162,7 @@ func (c *cache) GetWithExpiration(k string) (interface{}, time.Time, bool) {
 	}
 
 	if item.Expiration > 0 {
-		if time.Now().UnixNano() > item.Expiration {
+		if timer.Time().UnixNano() > item.Expiration {
 			c.mu.RUnlock()
 			return nil, time.Time{}, false
 		}
@@ -184,7 +185,7 @@ func (c *cache) get(k string) (interface{}, bool) {
 	}
 	// "Inlining" of Expired
 	if item.Expiration > 0 {
-		if time.Now().UnixNano() > item.Expiration {
+		if timer.Time().UnixNano() > item.Expiration {
 			return nil, false
 		}
 	}
@@ -942,7 +943,7 @@ type keyAndValue struct {
 // Delete all expired items from the cache.
 func (c *cache) DeleteExpired() {
 	var evictedItems []keyAndValue
-	now := time.Now().UnixNano()
+	now := timer.Time().UnixNano()
 	c.mu.Lock()
 	for k, v := range c.items {
 		// "Inlining" of expired
@@ -1051,7 +1052,7 @@ func (c *cache) Items() map[string]Item {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	m := make(map[string]Item, len(c.items))
-	now := time.Now().UnixNano()
+	now := timer.Time().UnixNano()
 	for k, v := range c.items {
 		// "Inlining" of Expired
 		if v.Expiration > 0 {

@@ -28,7 +28,7 @@ func (peer *CachePeer) Set(id string, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	return peer.cacheGroup.Set(ctx, id, raw, time.Now().Add(time.Minute*5), true)
+	return peer.cacheGroup.Set(ctx, id, raw, timer.Now().Add(time.Minute*5), true)
 }
 
 func (peer *CachePeer) Get(itemId string, dest interface{}) error {
