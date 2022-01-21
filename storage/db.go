@@ -76,7 +76,7 @@ func (s *ORMDatabase) CreateIfNot(ctx context.Context, obj DbItem) error {
 
 func (s *ORMDatabase) ReadByKey(cacheKey string, ctx context.Context, obj Generator, out interface{}) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
-		tx := s.Db.WithContext(ctx).First(obj, "id", out)
+		tx := s.Db.WithContext(ctx).First(dst, "id", out)
 		return CheckResult(tx, false)
 	})
 }
@@ -84,7 +84,7 @@ func (s *ORMDatabase) ReadByKey(cacheKey string, ctx context.Context, obj Genera
 // ReadOne returns object row in database as unique item
 func (s *ORMDatabase) ReadOne(cacheKey string, ctx context.Context, obj Generator) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
-		tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
+		tx := s.Db.WithContext(ctx).Where(dst).First(&dst)
 		return CheckResult(tx, false)
 	})
 }
@@ -94,10 +94,10 @@ func (s *ORMDatabase) ReadAll(cacheKey string, ctx context.Context, tx *gorm.DB,
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
 		if tx != nil {
 			// reuse passed tx Db context
-			tx = tx.Find(obj) // find product with integer primary key
+			tx = tx.Find(dst) // find product with integer primary key
 			return CheckResult(tx, false)
 		}
-		tx = s.Db.WithContext(ctx).Find(obj) // find product with integer primary key
+		tx = s.Db.WithContext(ctx).Find(dst) // find product with integer primary key
 		return CheckResult(tx, false)
 	})
 }
@@ -151,7 +151,7 @@ func (s *ORMDatabase) GetItems(cacheKey string, ctx context.Context, order strin
 
 func (s *ORMDatabase) FindOne(cacheKey string, ctx context.Context, obj Generator, query string, params ...string) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
-		tx := s.Db.WithContext(ctx).First(obj, query, params)
+		tx := s.Db.WithContext(ctx).First(dst, query, params)
 		return CheckResult(tx, false)
 	})
 }
