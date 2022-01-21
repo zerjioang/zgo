@@ -95,7 +95,7 @@ func (s *ORMDatabase) ReadAll(ctx context.Context, tx *gorm.DB, obj interface{})
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
 func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gorm.DB, obj interface{}, columns ...string) error {
-	return s.withCache(key, obj, 10 * time.Minute, func() error {
+	data, err := s.withCache(key, &obj, 10 * time.Minute, func() error {
 		if tx != nil {
 			// reuse passed tx Db context
 			tx = tx.Select(columns).Find(obj)
@@ -104,25 +104,26 @@ func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gor
 		}
 		return CheckResult(tx, false)
 	})
+	obj = data
+	return err
 }
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
-func (s *ORMDatabase) withCache(key string, obj interface{}, d time.Duration, f func() error) error {
+func (s *ORMDatabase) withCache(key string, obj interface{}, d time.Duration, f func() error) (interface{}, error) {
 	// 1 first check if requested data is in the cache
 	// note that, key value must be unique and must always be paired with method parameters
 	data, found := s.Cache.Get(key)
 	if found {
 		// cache HIT
-		obj = data
-		return nil
+		return data, nil
 	}
 	// cache MISS
 	if err := f(); err != nil {
-		return err
+		return nil, err
 	}
 	// if no error in database query, add result to cache
 	s.Cache.Set(key, obj, d)
-	return nil
+	return obj, nil
 }
 
 func (s *ORMDatabase) GetItems(ctx context.Context, order string, filter DbItem, limit uint, dst interface{}) error {
