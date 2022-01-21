@@ -26,8 +26,8 @@ import (
 
 // ORMDatabase is a GORM powered database access layer struct
 type ORMDatabase struct {
-	// Db is an orm based database connection access
-	Db       *gorm.DB
+	// db is an orm based database connection access
+	db       *gorm.DB
 	Metadata map[string]DbItem
 	// Cache
 	Cache *cache.Cache
@@ -43,21 +43,21 @@ var (
 func (s *ORMDatabase) Create(ctx context.Context, obj DbItem) error {
 	// make sure the new object to be created has a valid id
 	_ = obj.Id()
-	tx := s.Db.WithContext(ctx).Create(obj)
+	tx := s.db.WithContext(ctx).Create(obj)
 	return CheckResult(tx, false)
 }
 
 func (s *ORMDatabase) CreateNoWarnDuplicate(ctx context.Context, obj DbItem) error {
 	// make sure the new object to be created has a valid id
 	_ = obj.Id()
-	tx := s.Db.WithContext(ctx).Create(obj)
+	tx := s.db.WithContext(ctx).Create(obj)
 	return CheckResult(tx, true)
 }
 
 // CreateIfNot attempts to register the given object in the database if not exists
 func (s *ORMDatabase) CreateIfNot(ctx context.Context, obj DbItem) error {
 	// make sure the new object to be created has a valid id
-	tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
+	tx := s.db.WithContext(ctx).Where(obj).First(&obj)
 	if err := CheckResult(tx, false); err != nil {
 		// handler error
 		if err.Error() == "record not found" {
@@ -71,13 +71,13 @@ func (s *ORMDatabase) CreateIfNot(ctx context.Context, obj DbItem) error {
 }
 
 func (s *ORMDatabase) ReadByKey(ctx context.Context, obj DbItem, key interface{}) error {
-	tx := s.Db.WithContext(ctx).First(obj, "id", key)
+	tx := s.db.WithContext(ctx).First(obj, "id", key)
 	return CheckResult(tx, false)
 }
 
 // ReadOne returns object row in database as unique item
 func (s *ORMDatabase) ReadOne(ctx context.Context, obj DbItem) error {
-	tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
+	tx := s.db.WithContext(ctx).Where(obj).First(&obj)
 	return CheckResult(tx, false)
 }
 
@@ -88,7 +88,7 @@ func (s *ORMDatabase) ReadAll(ctx context.Context, tx *gorm.DB, obj interface{})
 		tx = tx.Find(obj) // find product with integer primary key
 		return CheckResult(tx, false)
 	}
-	tx = s.Db.WithContext(ctx).Find(obj) // find product with integer primary key
+	tx = s.db.WithContext(ctx).Find(obj) // find product with integer primary key
 	return CheckResult(tx, false)
 }
 
@@ -99,39 +99,39 @@ func (s *ORMDatabase) ReadAllWithFields(ctx context.Context, tx *gorm.DB, obj in
 		tx = tx.Select(columns).Find(obj)
 		return CheckResult(tx, false)
 	}
-	tx = s.Db.WithContext(ctx).Select(columns).Find(obj)
+	tx = s.db.WithContext(ctx).Select(columns).Find(obj)
 	return CheckResult(tx, false)
 }
 
 func (s *ORMDatabase) FindOne(ctx context.Context, obj DbItem, query string, params ...string) error {
-	tx := s.Db.WithContext(ctx).First(obj, query, params)
+	tx := s.db.WithContext(ctx).First(obj, query, params)
 	return CheckResult(tx, false)
 }
 
 func (s *ORMDatabase) FindByKeyWithFields(ctx context.Context, obj DbItem, columns ...string) error {
-	tx := s.Db.WithContext(ctx).Select(columns).First(obj)
+	tx := s.db.WithContext(ctx).Select(columns).First(obj)
 	return CheckResult(tx, false)
 }
 
 func (s *ORMDatabase) Update(ctx context.Context, obj DbItem) error {
-	tx := s.Db.WithContext(ctx).Model(obj).Updates(obj)
+	tx := s.db.WithContext(ctx).Model(obj).Updates(obj)
 	return CheckResult(tx, false)
 }
 
 func (s *ORMDatabase) SoftDelete(ctx context.Context, obj DbItem) error {
 	obj.SetDeleted()
-	tx := s.Db.WithContext(ctx).Model(obj).Updates(obj)
+	tx := s.db.WithContext(ctx).Model(obj).Updates(obj)
 	return CheckResult(tx, false)
 }
 
 func (s *ORMDatabase) Delete(ctx context.Context, obj DbItem) error {
-	tx := s.Db.WithContext(ctx).Delete(obj)
+	tx := s.db.WithContext(ctx).Delete(obj)
 	return CheckResult(tx, false)
 }
 
 // Exists returns if the item exists in the database or not
 func (s *ORMDatabase) Exists(ctx context.Context, obj DbItem) (bool, error) {
-	tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
+	tx := s.db.WithContext(ctx).Where(obj).First(&obj)
 	if tx.Error != nil {
 		return tx.Error.Error() == "record not found", tx.Error
 	}
@@ -140,7 +140,7 @@ func (s *ORMDatabase) Exists(ctx context.Context, obj DbItem) (bool, error) {
 
 // FindMatches returns a list of matching elements
 func (s *ORMDatabase) FindMatches(ctx context.Context, obj DbItem, dst interface{}) error {
-	tx := s.Db.WithContext(ctx).Find(dst, obj)
+	tx := s.db.WithContext(ctx).Find(dst, obj)
 	return CheckResult(tx, false)
 }
 
@@ -155,20 +155,20 @@ func (s *ORMDatabase) Get(key string) DbItem {
 
 func (s *ORMDatabase) DeleteTable(obj DbItem) error {
 	// get the table name given the passed struct
-	stmt := &gorm.Statement{DB: s.Db}
+	stmt := &gorm.Statement{DB: s.db}
 	if err := stmt.Parse(obj); err != nil {
 		return err
 	}
 	// execute the query
 	// we assume GORM provides the right table name an no injections are possible
-	tx := s.Db.Raw("DELETE FROM " + stmt.Schema.Table)
+	tx := s.db.Raw("DELETE FROM " + stmt.Schema.Table)
 	return CheckResult(tx, false)
 }
 
 // Close closes database connection
 func (s *ORMDatabase) Close() error {
-	if s != nil && s.Db != nil {
-		sqlDB, err := s.Db.DB()
+	if s != nil && s.db != nil {
+		sqlDB, err := s.db.DB()
 		if err != nil {
 			return err
 		}
