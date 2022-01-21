@@ -20,8 +20,8 @@ import (
 // Repository specifies the method declared for database layer interaction
 type Repository interface {
 	Create(ctx context.Context, obj DbItem) error
-	ReadByKey(cacheKey string, ctx context.Context, obj DbItem, key interface{}) (interface{}, error)
-	FindOne(cacheKey string, ctx context.Context, obj DbItem, query string, params ...string) (interface{}, error)
+	ReadByKey(cacheKey string, ctx context.Context, obj Generator, key interface{}) (interface{}, error)
+	FindOne(cacheKey string, ctx context.Context, obj Generator, query string, params ...string) (interface{}, error)
 	Update(ctx context.Context, obj DbItem) error
 	Delete(ctx context.Context, obj DbItem) error
 }

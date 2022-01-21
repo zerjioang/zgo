@@ -25,6 +25,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// Generator returns a new struct of given object as interface{}
+type Generator func() interface{}
+
 // ORMDatabase is a GORM powered database access layer struct
 type ORMDatabase struct {
 	// Db is an orm based database connection access
@@ -71,7 +74,7 @@ func (s *ORMDatabase) CreateIfNot(ctx context.Context, obj DbItem) error {
 	return nil
 }
 
-func (s *ORMDatabase) ReadByKey(cacheKey string, ctx context.Context, obj DbItem, out interface{}) (interface{}, error) {
+func (s *ORMDatabase) ReadByKey(cacheKey string, ctx context.Context, obj Generator, out interface{}) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
 		tx := s.Db.WithContext(ctx).First(obj, "id", out)
 		return CheckResult(tx, false)
@@ -79,7 +82,7 @@ func (s *ORMDatabase) ReadByKey(cacheKey string, ctx context.Context, obj DbItem
 }
 
 // ReadOne returns object row in database as unique item
-func (s *ORMDatabase) ReadOne(cacheKey string, ctx context.Context, obj DbItem) (interface{}, error) {
+func (s *ORMDatabase) ReadOne(cacheKey string, ctx context.Context, obj Generator) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
 		tx := s.Db.WithContext(ctx).Where(obj).First(&obj)
 		return CheckResult(tx, false)
@@ -87,7 +90,7 @@ func (s *ORMDatabase) ReadOne(cacheKey string, ctx context.Context, obj DbItem) 
 }
 
 // ReadAll makes a SELECT * style operation with given model and reads all fields
-func (s *ORMDatabase) ReadAll(cacheKey string, ctx context.Context, tx *gorm.DB, obj interface{}) (interface{}, error) {
+func (s *ORMDatabase) ReadAll(cacheKey string, ctx context.Context, tx *gorm.DB, obj Generator) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
 		if tx != nil {
 			// reuse passed tx Db context
@@ -100,8 +103,8 @@ func (s *ORMDatabase) ReadAll(cacheKey string, ctx context.Context, tx *gorm.DB,
 }
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
-func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gorm.DB, obj interface{}, columns ...string) (interface{}, error) {
-	return s.withCache(key, obj, 10*time.Minute, func(dst interface{}) error {
+func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gorm.DB, genObj func() interface{}, columns ...string) (interface{}, error) {
+	return s.withCache(key, genObj, 10*time.Minute, func(dst interface{}) error {
 		if tx != nil {
 			// reuse passed tx Db context
 			tx = tx.Select(columns).Find(dst)
@@ -113,7 +116,7 @@ func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gor
 }
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
-func (s *ORMDatabase) withCache(key string, obj interface{}, d time.Duration, f func(dst interface{}) error) (interface{}, error) {
+func (s *ORMDatabase) withCache(key string, genObj Generator, d time.Duration, f func(dst interface{}) error) (interface{}, error) {
 	// 1 first check if requested data is in the cache
 	// note that, key value must be unique and must always be paired with method parameters
 	data, found := s.Cache.Get(key)
@@ -122,6 +125,8 @@ func (s *ORMDatabase) withCache(key string, obj interface{}, d time.Duration, f 
 		return data, nil
 	}
 	// cache MISS
+	// we need to generate destination obj to unmarshal data by GORM
+	obj := genObj()
 	if err := f(obj); err != nil {
 		return nil, err
 	}
@@ -130,7 +135,7 @@ func (s *ORMDatabase) withCache(key string, obj interface{}, d time.Duration, f 
 	return obj, nil
 }
 
-func (s *ORMDatabase) GetItems(cacheKey string, ctx context.Context, order string, filter DbItem, limit uint, dst interface{}) (interface{}, error) {
+func (s *ORMDatabase) GetItems(cacheKey string, ctx context.Context, order string, filter DbItem, limit uint, dst Generator) (interface{}, error) {
 	return s.withCache(cacheKey, dst, 10*time.Minute, func(dst interface{}) error {
 		tx := s.Db.WithContext(ctx)
 		if order != "" {
@@ -144,7 +149,7 @@ func (s *ORMDatabase) GetItems(cacheKey string, ctx context.Context, order strin
 	})
 }
 
-func (s *ORMDatabase) FindOne(cacheKey string, ctx context.Context, obj DbItem, query string, params ...string) (interface{}, error) {
+func (s *ORMDatabase) FindOne(cacheKey string, ctx context.Context, obj Generator, query string, params ...string) (interface{}, error) {
 	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
 		tx := s.Db.WithContext(ctx).First(obj, query, params)
 		return CheckResult(tx, false)
