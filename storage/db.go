@@ -94,8 +94,8 @@ func (s *ORMDatabase) ReadAll(ctx context.Context, tx *gorm.DB, obj interface{})
 }
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
-func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gorm.DB, obj *interface{}, columns ...string) error {
-	data, err := s.withCache(key, obj, 10 * time.Minute, func(dst interface{}) error {
+func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gorm.DB, obj interface{}, columns ...string) (interface{}, error) {
+	return s.withCache(key, obj, 10 * time.Minute, func(dst interface{}) error {
 		if tx != nil {
 			// reuse passed tx Db context
 			tx = tx.Select(columns).Find(dst)
@@ -104,8 +104,6 @@ func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gor
 		}
 		return CheckResult(tx, false)
 	})
-	*obj = data
-	return err
 }
 
 // ReadAllWithFields makes a SELECT query and ONLY retrieves selected column names
