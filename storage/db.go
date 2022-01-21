@@ -130,21 +130,25 @@ func (s *ORMDatabase) withCache(key string, obj interface{}, d time.Duration, f 
 	return obj, nil
 }
 
-func (s *ORMDatabase) GetItems(ctx context.Context, order string, filter DbItem, limit uint, dst interface{}) error {
-	tx := s.Db.WithContext(ctx)
-	if order != "" {
-		tx = tx.Order(order)
-	}
-	if limit > 0 {
-		tx = tx.Limit(int(limit))
-	}
-	tx = tx.Find(dst) // find product with integer primary key
-	return CheckResult(tx, false)
+func (s *ORMDatabase) GetItems(cacheKey string, ctx context.Context, order string, filter DbItem, limit uint, dst interface{}) (interface{}, error) {
+	return s.withCache(cacheKey, dst, 10*time.Minute, func(dst interface{}) error {
+		tx := s.Db.WithContext(ctx)
+		if order != "" {
+			tx = tx.Order(order)
+		}
+		if limit > 0 {
+			tx = tx.Limit(int(limit))
+		}
+		tx = tx.Find(dst) // find product with integer primary key
+		return CheckResult(tx, false)
+	})
 }
 
-func (s *ORMDatabase) FindOne(ctx context.Context, obj DbItem, query string, params ...string) error {
-	tx := s.Db.WithContext(ctx).First(obj, query, params)
-	return CheckResult(tx, false)
+func (s *ORMDatabase) FindOne(cacheKey string, ctx context.Context, obj DbItem, query string, params ...string) (interface{}, error) {
+	return s.withCache(cacheKey, obj, 10*time.Minute, func(dst interface{}) error {
+		tx := s.Db.WithContext(ctx).First(obj, query, params)
+		return CheckResult(tx, false)
+	})
 }
 
 func (s *ORMDatabase) FindByKeyWithFields(ctx context.Context, obj DbItem, columns ...string) error {
