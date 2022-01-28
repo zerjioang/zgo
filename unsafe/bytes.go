@@ -29,6 +29,7 @@ type SliceHeader struct {
 
 // BytesToString converts a byte slice to a string.
 // It's fast, but not safe. Use it only if you know what you're doing.
+// The byte slice passed to this function is not to be used after this call as it's unsafe; you have been warned.
 func BytesToString(b []byte) string {
 	bytesHeader := (*SliceHeader)(unsafe.Pointer(&b))
 	strHeader := StringHeader{
@@ -40,6 +41,7 @@ func BytesToString(b []byte) string {
 
 // StringToBytes converts a string to a byte slice.
 // It's fast, but not safe. Use it only if you know what you're doing.
+// The string passed to this functions is not to be used again after this call as it's unsafe; you have been warned.
 func StringToBytes(s string) []byte {
 	strHeader := (*StringHeader)(unsafe.Pointer(&s))
 	bytesHeader := SliceHeader{
