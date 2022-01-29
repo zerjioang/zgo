@@ -119,10 +119,13 @@ func (s *ORMDatabase) ReadAllWithFields(key string, ctx context.Context, tx *gor
 func (s *ORMDatabase) withCache(key string, gen Generator, d time.Duration, f func(dst interface{}) error) (interface{}, error) {
 	// 1 first check if requested data is in the cache
 	// note that, key value must be unique and must always be paired with method parameters
-	data, found := s.Cache.Get(key)
-	if found {
-		// cache HIT
-		return data, nil
+	if key != "" {
+		// user provided a cache key, so we attempt to use it
+		data, found := s.Cache.Get(key)
+		if found {
+			// cache HIT
+			return data, nil
+		}
 	}
 	// cache MISS
 	// we need to generate destination obj to unmarshal data by GORM
