@@ -263,7 +263,7 @@ func CheckResult(tx *gorm.DB, noWarnDuplicate bool) error {
 // AsTransaction executes given SQL code as unique transaction that is committed.
 // if no errors are found
 // In case of error, all operations are ROLLBACK
-func (s *ORMDatabase) AsTransaction(f func(tx *gorm.DB) error ) error {
+func (s *ORMDatabase) AsTransaction(f func(tx *gorm.DB) error) error {
 	return s.Db.Transaction(func(tx *gorm.DB) error {
 		// do some database operations in the transaction (use 'tx' from this point, not 'db')
 		txErr := f(tx)
