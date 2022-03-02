@@ -40,6 +40,8 @@ type ItemMetadata struct {
 }
 
 var _ callbacks.BeforeCreateInterface = (*ItemMetadata)(nil)
+var _ callbacks.BeforeUpdateInterface = (*ItemMetadata)(nil)
+var _ callbacks.BeforeDeleteInterface = (*ItemMetadata)(nil)
 
 func (mt *ItemMetadata) LoadStruct(rows *sql.Rows) (interface{}, error) {
 	panic("LoadStruct method needs to be implemented")
@@ -53,6 +55,10 @@ func (mt *ItemMetadata) BeforeCreate(*gorm.DB) (err error) {
 func (mt *ItemMetadata) BeforeUpdate(*gorm.DB) (err error) {
 	mt.UpdatedAt = timer.Now()
 	return
+}
+
+func (mt *ItemMetadata) BeforeDelete(*gorm.DB) (err error) {
+	return mt.DeletedAt.Scan(timer.Now())
 }
 
 func (mt *ItemMetadata) SetDeleted() error {
